@@ -203,8 +203,9 @@ Technical Requirements:
 3. **DO NOT add any text** - this is a main image without text or words
 4. Clean white background (solid, high-contrast, distinct from character)
 5. **EXACT dimensions: 240px width × 240px height** (must be exactly 240×240 pixels)
-6. Cute, expressive, and friendly sticker illustration style
-7. High quality digital illustration
+6. Target Aspect Ratio: 1:1 (Square) - COMPOSITION MUST FIT SQUARE RATIO
+7. Cute, expressive, and friendly sticker illustration style
+8. High quality digital illustration
 8. Character should be centered and well-positioned in the frame
 9. Clean, simple, and appropriate design suitable as a sticker pack main image
 10. Safe, family-friendly content`
@@ -412,8 +413,9 @@ Technical Requirements:
 3. **DO NOT add any text** - this is a tab image without text or words
 4. Clean and simple background (solid, high-contrast, distinct from character)
 5. **EXACT dimensions: 96px width × 74px height** (must be exactly 96×74 pixels)
-6. Character should be the main and central element, clearly visible
-7. Simple and clean design suitable for chat room thumbnail
+6. Target Aspect Ratio: 4:3 (Landscape) - COMPOSITION MUST FIT LANDSCAPE RATIO
+7. Character should be the main and central element, clearly visible
+8. Simple and clean design suitable for chat room thumbnail
 8. High quality digital illustration despite small size
 9. Character should be well-centered and recognizable even at this small size
 10. Minimalist design - keep it simple and clean since it's a small thumbnail image
@@ -626,6 +628,7 @@ export async function generateGrid8Image(
 
 Character Reference: **STRICTLY FOLLOW the provided character image.** The stickers MUST look exactly like the same character in different poses. Maintain the same facial features, clothing, colors, and proportions.
 Background Requirement: **High contrast solid background** (e.g., white) in each cell to facilitate automatic background removal. The background color MUST be distinct from the character and text box colors.
+Target Aspect Ratio: 9:16 (Vertical Portrait)
 Text Style Guidelines: ${safeTextStyle}
 
 ⚠️⚠️⚠️ ABSOLUTE SIZE REQUIREMENT - CRITICAL - NO EXCEPTIONS ⚠️⚠️⚠️
