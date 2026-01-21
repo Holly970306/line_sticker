@@ -256,7 +256,7 @@ function App() {
         // 直接生成包含8宮格的圖片
         let gridImage = null
         let retryCount = 0
-        const maxRetries = 3
+        const maxRetries = 5 // 增加重試次數到 5 次
         
         while (!gridImage && retryCount < maxRetries) {
           try {
@@ -269,9 +269,22 @@ function App() {
           } catch (error) {
             retryCount++
             if (retryCount < maxRetries) {
+              // 檢查是否為 overloaded 錯誤，使用更長的等待時間
+              const isOverloaded = error.message && (
+                error.message.includes('overloaded') || 
+                error.message.includes('overload') ||
+                error.message.includes('請稍後再試')
+              )
+              
+              // 使用指數退避策略
+              // 對於 overloaded 錯誤：10秒、20秒、40秒、80秒
+              // 對於其他錯誤：5秒、10秒、20秒、40秒
+              const baseDelay = isOverloaded ? 10000 : 5000
+              const delay = baseDelay * Math.pow(2, retryCount - 1)
+              
               console.warn(`生成8宮格失敗，重試中 (${retryCount}/${maxRetries})...`, error.message)
-              setProgress(`生成8宮格失敗，正在重試 (${retryCount}/${maxRetries})...`)
-              await new Promise(resolve => setTimeout(resolve, 3000 * retryCount))
+              setProgress(`生成8宮格失敗，正在重試 (${retryCount}/${maxRetries})，等待 ${Math.round(delay / 1000)} 秒...`)
+              await new Promise(resolve => setTimeout(resolve, delay))
             } else {
               console.error(`生成8宮格失敗，已重試 ${maxRetries} 次:`, error)
               throw new Error(`生成第 ${gridIndex + 1} 張8宮格失敗（已重試 ${maxRetries} 次）: ${error.message}`)

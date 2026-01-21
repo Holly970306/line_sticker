@@ -775,7 +775,7 @@ Generate the complete 8-grid image with STRICT adherence to cell boundaries. Eac
     })
 
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 90000) // 8宮格需要更長時間，90秒
+    const timeoutId = setTimeout(() => controller.abort(), 150000) // 8宮格需要更長時間，150秒（2.5分鐘）
 
     let response
     try {
@@ -794,7 +794,7 @@ Generate the complete 8-grid image with STRICT adherence to cell boundaries. Eac
     } catch (fetchError) {
       clearTimeout(timeoutId)
       if (fetchError.name === 'AbortError') {
-        throw new Error('請求超時（超過90秒），請稍後再試')
+        throw new Error('請求超時（超過150秒），請稍後再試')
       }
       throw fetchError
     }
