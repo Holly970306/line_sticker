@@ -725,11 +725,51 @@ Generate the complete 8-grid image with STRICT adherence to cell boundaries. Eac
       throw new Error('角色圖片數據為空')
     }
     
+    // 先壓縮角色圖片以減少數據量（8宮格生成時需要較小的參考圖片）
+    let processedImageDataUrl = characterImageDataUrl
+    try {
+      // 將圖片壓縮到最大 512x512，減少 base64 數據大小
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.src = characterImageDataUrl
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          const maxSize = 512
+          if (img.width > maxSize || img.height > maxSize) {
+            const canvas = document.createElement('canvas')
+            const scale = Math.min(maxSize / img.width, maxSize / img.height)
+            canvas.width = img.width * scale
+            canvas.height = img.height * scale
+            const ctx = canvas.getContext('2d')
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+            // 使用 JPEG 格式可以更好地壓縮（質量 0.85）
+            processedImageDataUrl = canvas.toDataURL('image/jpeg', 0.85)
+            console.log(`角色圖片已壓縮: ${img.width}x${img.height} -> ${canvas.width}x${canvas.height} (JPEG 85%)`)
+          }
+          resolve()
+        }
+        img.onerror = () => {
+          console.warn('圖片載入失敗，使用原圖')
+          resolve() // 不拋出錯誤，繼續使用原圖
+        }
+        // 設置超時，避免無限等待
+        setTimeout(() => {
+          if (!img.complete) {
+            console.warn('圖片載入超時，使用原圖')
+            resolve()
+          }
+        }, 5000)
+      })
+    } catch (compressError) {
+      console.warn('圖片壓縮失敗，使用原圖:', compressError)
+      // 如果壓縮失敗，繼續使用原圖
+    }
+    
     let base64Data
-    if (characterImageDataUrl.includes(',')) {
-      base64Data = characterImageDataUrl.split(',')[1]
+    if (processedImageDataUrl.includes(',')) {
+      base64Data = processedImageDataUrl.split(',')[1]
     } else {
-      base64Data = characterImageDataUrl
+      base64Data = processedImageDataUrl
     }
     
     if (!base64Data || base64Data.length === 0) {
@@ -744,6 +784,12 @@ Generate the complete 8-grid image with STRICT adherence to cell boundaries. Eac
     
     if (base64Data.length < 100) {
       throw new Error('base64 數據長度不足')
+    }
+    
+    // 檢查 base64 數據大小（約 4MB 限制，base64 比原始數據大約 33%）
+    const base64SizeMB = (base64Data.length * 3 / 4) / (1024 * 1024)
+    if (base64SizeMB > 3) {
+      console.warn(`警告：圖片數據較大 (${base64SizeMB.toFixed(2)}MB)，可能導致 API 請求失敗`)
     }
 
     const requestBody = {

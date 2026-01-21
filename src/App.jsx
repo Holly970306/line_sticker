@@ -227,6 +227,13 @@ function App() {
 
       // 生成所有8宮格（直接生成包含8宮格的圖片）
       for (let gridIndex = 0; gridIndex < gridCount; gridIndex++) {
+        // 在生成每張8宮格之間添加延遲，避免請求過於頻繁
+        if (gridIndex > 0) {
+          const delay = 3000 // 3秒延遲
+          setProgress(`等待 ${delay / 1000} 秒後生成下一張8宮格（避免 API 過載）...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+        
         setProgress(`正在生成第 ${gridIndex + 1}/${gridCount} 張8宮格圖片...`)
         
         // 獲取當前8宮格的8個貼圖描述
