@@ -9,6 +9,16 @@ Visibility & Background-Removal Rules:
 - The design must remain readable on both light and dark preview backgrounds.
 `
 
+const STRICT_CONSISTENCY_RULES = `
+⚠️⚠️⚠️ STRICT CHARACTER CONSISTENCY REQUIRED ⚠️⚠️⚠️
+- IDENTITY LOCK: The character MUST be the EXACT SAME PERSON as in the reference image.
+- HAIR COLOR: Must match the reference EXACTLY. Do NOT change hair color.
+- CLOTHING COLOR: Must match the reference EXACTLY. Do NOT change clothing color.
+- SKIN TONE: Must match the reference EXACTLY.
+- NO RANDOM COLORS: Do not introduce new colors for hair or clothing that are not in the reference.
+- Verify against reference: If the reference has blonde hair, the output MUST have blonde hair.
+`
+
 /**
  * 生成角色圖片（白色背景）
  * @param {string} apiKey - Gemini API Key
@@ -221,7 +231,7 @@ export async function generateMainImage(apiKey, characterImageDataUrl, theme) {
   const prompt = `Create a main image for a messaging sticker pack based on the character reference image.
 
 Character Reference: Use the provided character image as reference
-Strict Consistency: Hair color and all colors MUST match the reference exactly. Do NOT change hair color or add new colors.
+${STRICT_CONSISTENCY_RULES}
 Theme: ${cleanTheme}
 
 Technical Requirements:
@@ -449,7 +459,7 @@ export async function generateTabImage(apiKey, characterImageDataUrl, theme) {
   const prompt = `Create a tab image for a messaging sticker pack based on the character reference image.
 
 Character Reference: Use the provided character image as reference
-Strict Consistency: Hair color and all colors MUST match the reference exactly. Do NOT change hair color or add new colors.
+${STRICT_CONSISTENCY_RULES}
 Theme: ${cleanTheme}
 
 Technical Requirements:
@@ -694,7 +704,7 @@ The 8 stickers must float on a single, continuous white background.
 Imagine 8 stickers placed on a white sheet of paper. NO lines between them.
 
 Character Reference: **STRICTLY FOLLOW the provided character image.** The stickers MUST look exactly like the same character in different poses. Maintain the same facial features, clothing, colors, and proportions.
-Strict Consistency: Hair color and all colors MUST match the reference exactly. Do NOT change hair color or add new colors.
+${STRICT_CONSISTENCY_RULES}
 Background Requirement: **High contrast solid white background** in each area to facilitate automatic background removal.
 ${IMAGE_VISIBILITY_RULES}
 Target Aspect Ratio: 9:16 (Vertical Portrait)
@@ -1007,7 +1017,7 @@ The text "${text}" must have a CLEAR and VISIBLE text box/background:
   const prompt = `Create a cute and friendly LINE sticker style illustration.
 
 Character Reference: Use the provided character image as reference for style and appearance.
-Strict Consistency: Hair color and all colors MUST match the reference exactly. Do NOT change hair color or add new colors.
+${STRICT_CONSISTENCY_RULES}
 Scene Description: ${cleanDescription}
 Text Content: "${cleanText}"
 Text Style Guidelines: ${safeTextStyle}
