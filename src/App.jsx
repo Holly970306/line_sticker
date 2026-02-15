@@ -4,35 +4,39 @@ import { generateImageDescriptionsWithText, generateTextStyle } from './utils/ge
 import { generateCharacter, generateStickerWithText, generateMainImage, generateTabImage, generateGrid8Image } from './utils/characterGenerator'
 import { createGrid8, splitGrid8, removeBackgroundSimple, fileToDataURL } from './utils/imageUtils'
 import { downloadAsZip } from './utils/zipDownloader'
-
 function App() {
+  // 認證狀態
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
+
   // 步驟 1: API Key
   const [apiKey, setApiKey] = useState('')
-  
+
   // 步驟 2: 張數選擇
   const [count, setCount] = useState(8)
-  
+
   // 步驟 3: 角色描述/圖片和主題說明
   const [characterDescription, setCharacterDescription] = useState('')
   const [theme, setTheme] = useState('')
   const [uploadedCharacterImage, setUploadedCharacterImage] = useState(null)
-  
+
   // 步驟 4: 角色生成/確認
   const [characterImage, setCharacterImage] = useState(null)
   const [characterConfirmed, setCharacterConfirmed] = useState(false)
   const [generatingCharacter, setGeneratingCharacter] = useState(false)
-  
+
   // 步驟 5: 文字風格描述
   const [textStyle, setTextStyle] = useState('')
   const [generatingTextStyle, setGeneratingTextStyle] = useState(false)
   const [textStyleConfirmed, setTextStyleConfirmed] = useState(false)
-  
+
   // 步驟 6: 文字描述
   const [descriptions, setDescriptions] = useState([])
   const [generatingDescriptions, setGeneratingDescriptions] = useState(false)
   const [excludedTexts, setExcludedTexts] = useState('') // 排除的文字（每行一個）
   const [characterStance, setCharacterStance] = useState('') // 角色立場描述（可選）
-  
+
   // 步驟 6-8: 8宮格生成、去背、裁切
   const [gridImages, setGridImages] = useState([]) // 8宮格圖片陣列
   const [processedGridImages, setProcessedGridImages] = useState([]) // 去背後的8宮格
@@ -45,6 +49,17 @@ function App() {
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState('')
+
+  // 處理登錄
+  const handleLogin = (e) => {
+    e.preventDefault()
+    if (loginPassword === '970306') {
+      setIsAuthenticated(true)
+      setLoginError('')
+    } else {
+      setLoginError('密碼錯誤，請重新輸入')
+    }
+  }
 
   // 處理角色圖片上傳
   const handleCharacterUpload = async (e) => {
@@ -90,7 +105,7 @@ function App() {
   const handleConfirmCharacter = () => {
     setCharacterConfirmed(true)
   }
-  
+
   // 步驟 5: 生成文字風格描述
   const handleGenerateTextStyle = async () => {
     if (!apiKey.trim()) {
@@ -138,7 +153,7 @@ function App() {
     }
 
     setGeneratingDescriptions(true)
-    
+
     // 如果沒有文字風格描述，先自動生成
     let finalTextStyle = textStyle
     if (!textStyle.trim()) {
@@ -164,7 +179,7 @@ function App() {
         .split('\n')
         .map(line => line.trim())
         .filter(line => line.length > 0)
-      
+
       const items = await generateImageDescriptionsWithText(
         apiKey,
         theme,
@@ -178,7 +193,7 @@ function App() {
     } catch (error) {
       console.error('生成描述失敗:', error)
       const errorMessage = error.message || error.toString() || '未知錯誤'
-      
+
       // 檢查是否為 overloaded 錯誤
       if (errorMessage.includes('overloaded') || errorMessage.includes('overload') || errorMessage.includes('503')) {
         alert(`生成描述失敗：API 服務器過載\n\n錯誤信息：${errorMessage}\n\n建議：\n1. 等待幾秒後再試\n2. 如果持續失敗，可能是 API 服務器負載過高，請稍後再試`)
@@ -248,18 +263,18 @@ function App() {
           setProgress(`等待 ${delay / 1000} 秒後生成下一張8宮格（避免 API 過載）...`)
           await new Promise(resolve => setTimeout(resolve, delay))
         }
-        
+
         setProgress(`正在生成第 ${gridIndex + 1}/${gridCount} 張8宮格圖片...`)
-        
+
         // 獲取當前8宮格的8個貼圖描述
         const startIndex = gridIndex * 8
         const endIndex = Math.min(startIndex + 8, count)
         const gridStickers = []
-        
+
         for (let i = startIndex; i < endIndex; i++) {
           gridStickers.push(descriptions[i])
         }
-        
+
         // 如果不足8張，用空白描述填充（最後一張8宮格可能不足8張）
         while (gridStickers.length < 8) {
           gridStickers.push({
@@ -267,19 +282,19 @@ function App() {
             text: ''
           })
         }
-        
+
         // 驗證文字不重複
         const texts = gridStickers.map(s => s.text).filter(Boolean)
         const uniqueTexts = new Set(texts)
         if (texts.length !== uniqueTexts.size) {
           console.warn('警告：當前8宮格中有重複文字，將繼續生成')
         }
-        
+
         // 直接生成包含8宮格的圖片
         let gridImage = null
         let retryCount = 0
         const maxRetries = 5 // 增加重試次數到 5 次
-        
+
         while (!gridImage && retryCount < maxRetries) {
           try {
             gridImage = await generateGrid8Image(
@@ -293,17 +308,17 @@ function App() {
             if (retryCount < maxRetries) {
               // 檢查是否為 overloaded 錯誤，使用更長的等待時間
               const isOverloaded = error.message && (
-                error.message.includes('overloaded') || 
+                error.message.includes('overloaded') ||
                 error.message.includes('overload') ||
                 error.message.includes('請稍後再試')
               )
-              
+
               // 使用指數退避策略
               // 對於 overloaded 錯誤：10秒、20秒、40秒、80秒
               // 對於其他錯誤：5秒、10秒、20秒、40秒
               const baseDelay = isOverloaded ? 10000 : 5000
               const delay = baseDelay * Math.pow(2, retryCount - 1)
-              
+
               console.warn(`生成8宮格失敗，重試中 (${retryCount}/${maxRetries})...`, error.message)
               setProgress(`生成8宮格失敗，正在重試 (${retryCount}/${maxRetries})，等待 ${Math.round(delay / 1000)} 秒...`)
               await new Promise(resolve => setTimeout(resolve, delay))
@@ -313,7 +328,7 @@ function App() {
             }
           }
         }
-        
+
         if (gridImage) {
           allGridImages.push(gridImage)
         }
@@ -344,7 +359,7 @@ function App() {
   const handleApplyBackgroundRemoval = async () => {
     setProcessingBackground(true)
     setProgress('正在重新處理去背...')
-    
+
     try {
       const newProcessed = []
       for (let i = 0; i < gridImages.length; i++) {
@@ -380,12 +395,12 @@ function App() {
       for (let gridIndex = 0; gridIndex < gridCount; gridIndex++) {
         setProgress(`正在裁切第 ${gridIndex + 1}/${gridCount} 張8宮格...`)
         const cutCells = await splitGrid8(processedGridImages[gridIndex], 370, 320)
-        
+
         // 計算這個8宮格實際有多少張貼圖
         const startIndex = gridIndex * 8
         const endIndex = Math.min(startIndex + 8, count)
         const actualCutCount = endIndex - startIndex
-        
+
         allCutImages.push(...cutCells.slice(0, actualCutCount))
       }
 
@@ -435,6 +450,36 @@ function App() {
       console.error('下載失敗:', error)
       alert(`下載失敗: ${error.message}`)
     }
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="app">
+        <div className="container login-container">
+          <h1 className="title">系統認證</h1>
+          <form onSubmit={handleLogin} className="login-form">
+            <div className="form-group">
+              <label>請輸入存取密碼</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="密碼"
+                className="form-input"
+                autoFocus
+              />
+            </div>
+            {loginError && <p className="error-message">{loginError}</p>}
+            <button type="submit" className="btn btn-primary">
+              登錄系統
+            </button>
+          </form>
+          <div className="login-footer">
+            <p>請輸入授權密碼以使用 LINE 貼圖製作工具</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -518,7 +563,7 @@ function App() {
         {/* 步驟 4: 生成角色/確認角色 */}
         <div className="step-section">
           <h2>步驟 4: 角色確認</h2>
-          
+
           {/* 如果已上傳角色圖片，直接顯示 */}
           {uploadedCharacterImage && characterImage && (
             <div className="character-preview">
@@ -587,7 +632,7 @@ function App() {
             >
               {generatingTextStyle ? '生成中...' : textStyle ? '重新生成字體樣式風格' : '預覽 AI 生成的字體樣式風格'}
             </button>
-            
+
             {textStyle && (
               <div className="text-style-preview">
                 <h3>字體樣式風格：</h3>
@@ -597,7 +642,7 @@ function App() {
                 </button>
               </div>
             )}
-            
+
             {!textStyle && (
               <div className="info-box">
                 <p>💡 提示：如果現在不填寫文字風格，系統會在生成文字描述時自動生成統一的字體樣式風格，確保所有貼圖的文字樣式一致。</p>
@@ -613,7 +658,7 @@ function App() {
         {textStyleConfirmed && (
           <div className="step-section">
             <h2>步驟 6: 生成文字描述（可編輯）</h2>
-            
+
             {/* 角色立場描述 */}
             <div className="form-group" style={{ marginBottom: '20px' }}>
               <label htmlFor="characterStance" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
@@ -667,7 +712,7 @@ function App() {
                 💡 提示：輸入之前已使用的文字，生成時會自動排除這些文字，避免重複。適合延伸同一系列貼圖時使用。
               </p>
             </div>
-            
+
             <button
               className="btn btn-primary"
               onClick={handleGenerateDescriptions}
@@ -774,8 +819,8 @@ function App() {
                   <button
                     className="btn btn-secondary"
                     onClick={() => setPreviewBackgroundDark(!previewBackgroundDark)}
-                    style={{ 
-                      fontSize: '14px', 
+                    style={{
+                      fontSize: '14px',
                       padding: '8px 16px',
                       width: 'auto',
                       minWidth: '140px',
@@ -798,9 +843,9 @@ function App() {
                   </span>
                 </div>
               </div>
-              <div 
-                className="grid-preview" 
-                style={{ 
+              <div
+                className="grid-preview"
+                style={{
                   backgroundColor: previewBackgroundDark ? '#1a1a1a' : '#ffffff',
                   padding: '20px',
                   borderRadius: '8px',
@@ -809,8 +854,8 @@ function App() {
                 }}
               >
                 {processedGridImages.map((img, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className="grid-item"
                     style={{
                       backgroundColor: previewBackgroundDark ? '#1a1a1a' : 'transparent',
@@ -831,9 +876,9 @@ function App() {
                         overflow: 'hidden'
                       }}
                     >
-                      <img 
-                        src={img} 
-                        alt={`去背後 8宮格 ${idx + 1}`} 
+                      <img
+                        src={img}
+                        alt={`去背後 8宮格 ${idx + 1}`}
                         className="preview-image grid-image"
                         style={{
                           backgroundColor: previewBackgroundDark ? '#1a1a1a' : 'transparent',
@@ -850,10 +895,10 @@ function App() {
                   </div>
                 ))}
               </div>
-              <p style={{ 
-                marginTop: '12px', 
-                fontSize: '13px', 
-                color: '#666', 
+              <p style={{
+                marginTop: '12px',
+                fontSize: '13px',
+                color: '#666',
                 fontStyle: 'italic',
                 textAlign: 'center',
                 padding: '10px',
@@ -879,7 +924,7 @@ function App() {
         {cutImages.length > 0 && currentStep >= 8 && (
           <div className="step-section">
             <h2>{currentStep === 9 ? '步驟 9: 完成並下載' : '步驟 8: 裁切完成'}</h2>
-            
+
             {/* 主要圖片和標籤圖片 */}
             {(mainImage || tabImage) && (
               <div className="preview-group">
@@ -900,7 +945,7 @@ function App() {
                 </div>
               </div>
             )}
-            
+
             {/* 8宮格預覽 */}
             {gridImages.length > 0 && (
               <div className="preview-group">
